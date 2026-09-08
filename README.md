@@ -11,21 +11,16 @@ React 19 + Vite 8 Anwendung mit GitHub-Actions-Pipeline und Deployment auf AWS E
 
 ```bash
 npm install
-npm start
+npm run dev
 ```
 
-`npm start` startet parallel:
-
-- die Vite-Dev-Server auf http://localhost:3000
-- die json-server-Mock-API auf http://127.0.0.1:3001
+`npm run dev` startet den Vite-Dev-Server auf http://localhost:3000.
 
 ## Verfügbare Scripts
 
 | Script | Beschreibung |
 | --- | --- |
-| `npm start` | Dev-Server und Mock-API parallel starten |
-| `npm run dev` | Nur den Vite-Dev-Server starten |
-| `npm run start-api` | Nur die json-server-Mock-API starten |
+| `npm run dev` | Den Vite-Dev-Server starten |
 | `npm run build` | Produktions-Build nach `dist/` erzeugen |
 | `npm run preview` | Produktions-Build lokal ausliefern |
 | `npm test` | Tests einmalig mit Vitest ausführen |

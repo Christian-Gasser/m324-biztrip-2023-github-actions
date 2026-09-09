@@ -208,3 +208,25 @@ Erwartet wird ein `HTTP/1.1 200 OK`. Öffnet die Adresse zusätzlich im Browser 
 2. Warum braucht der `build`-Job Repository-*Variables* statt Environment-Secrets, obwohl er im selben Workflow läuft wie `deploy`?
 3. Was würde passieren, wenn der `deploy`-Job auch bei Pull Requests laufen würde? Warum schützt die Bedingung `if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'` davor?
 4. Warum wird der SSH-Key am Ende des Jobs mit `if: always()` wieder gelöscht, statt nur am erfolgreichen Ende?
+
+---
+
+## Musterlösung zu den Reflexionsfragen
+
+> Erst selbst versuchen, dann vergleichen.
+
+**1. Warum liegen `EC2_HOST`, `EC2_USER` und `EC2_SSH_KEY` im Environment `production` und nicht als normale Repository-Secrets?**
+
+Environment-Secrets sind an das Environment gebunden und werden nur Jobs zur Verfügung gestellt, die explizit `environment: production` deklarieren. So kann man zusätzliche Schutzregeln (z. B. Required Reviewers, Wartezeiten, Branch-Einschränkungen) direkt am Environment festmachen, bevor sensible Deploy-Credentials überhaupt gelesen werden dürfen. Bei normalen Repo-Secrets hätte theoretisch jeder Job im Repo (auch versehentlich in einem PR-Workflow) Zugriff darauf.
+
+**2. Warum braucht der `build`-Job Repository-Variables statt Environment-Secrets, obwohl er im selben Workflow läuft wie `deploy`?**
+
+Weil der `build`-Job kein `environment: production` gesetzt hat, hat er schlicht keinen Zugriff auf Environment-Secrets/-Variables — der Zugriff ist strikt an die Deklaration gebunden, nicht daran, in welchem Workflow der Job läuft. `VITE_API_BASE_URL`/`VITE_IMGS` werden zudem zur Build-Zeit in den Vite-Build einkompiliert (kein Geheimnis, sondern eine öffentlich im Frontend-Bundle sichtbare URL), deshalb reichen normale, ungeschützte Repository-Variables völlig aus.
+
+**3. Was würde passieren, wenn der `deploy`-Job auch bei Pull Requests laufen würde? Warum schützt die Bedingung davor?**
+
+Ohne diese Bedingung würde jeder PR — auch von einem Fork oder mit noch ungeprüftem Code — potenziell einen Deploy auf die Produktions-EC2-Instanz auslösen, inklusive Zugriff auf den privaten SSH-Key. Das wäre sowohl ein Sicherheitsrisiko (fremder Code bekäme faktisch Zugriff auf Produktionscredentials) als auch fachlich falsch, da PR-Branches oft nicht "production-ready" sind. Die Bedingung `github.ref == 'refs/heads/main' && github.event_name != 'pull_request'` stellt sicher, dass nur tatsächliche Pushes auf `main` deployen.
+
+**4. Warum wird der SSH-Key am Ende des Jobs mit `if: always()` wieder gelöscht, statt nur am erfolgreichen Ende?**
+
+Der Key liegt während des Jobs unverschlüsselt auf dem Runner-Dateisystem. Schlägt ein vorheriger Schritt fehl (z. B. `rsync` bricht ab), würde der restliche Job normalerweise übersprungen — ohne `if: always()` bliebe der Key dann auf dem (kurzlebigen, aber trotzdem fremden) GitHub-Runner zurück, statt garantiert entfernt zu werden. `always()` sorgt dafür, dass der Aufräumschritt unabhängig vom Erfolg vorheriger Schritte ausgeführt wird.

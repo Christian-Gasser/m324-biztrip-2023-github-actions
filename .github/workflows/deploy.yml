@@ -96,3 +96,35 @@ jobs:
       - name: SSH-Key entfernen
         if: always()
         run: rm -f ~/.ssh/deploy_key
+
+  docker:
+    name: Docker-Image bauen und auf Docker Hub veröffentlichen
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bei Docker Hub anmelden
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Buildx einrichten
+        uses: docker/setup-buildx-action@v3
+
+      # Tagging-Strategie: prod01 (aktuell auf Produktion deployt), latest (letzter
+      # erfolgreicher Build) und die Git-Kurz-SHA (unveränderliche Referenz je Commit).
+      - name: Image bauen und pushen
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: |
+            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
+            VITE_IMGS=${{ vars.VITE_IMGS || 'items' }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/biztrips:prod01
+            ${{ secrets.DOCKERHUB_USERNAME }}/biztrips:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/biztrips:${{ github.sha }}

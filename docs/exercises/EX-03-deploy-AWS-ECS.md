@@ -64,6 +64,45 @@ Danach eine Rolle `github-actions-biztrips-ecs` mit einer Trust Policy anlegen, 
 
 ---
 
+## Exkurs: Fallback für AWS Academy Learner Lab
+
+Wer diese Übung mit einem **AWS Academy Learner Lab**-Account statt einem
+regulären AWS-Account macht, kann Schritt 2 so nicht durchführen: Learner-Lab-
+Accounts erlauben kein `iam:CreateOpenIDConnectProvider` und kein
+`iam:CreateRole` — es steht nur die vorgegebene `LabRole` zur Verfügung, der
+höchstens zusätzliche Policies angehängt werden dürfen. Der Befehl aus
+Schritt 2 schlägt dort mit einem `AccessDenied` fehl.
+
+**Fallback:** Statt einer per OIDC angenommenen Rolle die von AWS Academy pro
+Lab-Sitzung bereitgestellten temporären Zugangsdaten verwenden. Sie stehen im
+Lab unter *AWS Details → AWS CLI* und bestehen aus drei Werten:
+`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` und `AWS_SESSION_TOKEN`. Diese
+als GitHub Secrets hinterlegen und in Schritt 7 den `configure-aws-
+credentials`-Schritt so anpassen:
+
+```yaml
+      - name: AWS-Credentials aus Learner-Lab-Session beziehen
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+```
+
+`permissions: id-token: write` wird in diesem Fall nicht gebraucht (kein
+OIDC-Token-Request), kann aber im Job stehen bleiben.
+
+Wichtiger Unterschied zum OIDC-Ansatz: Diese Zugangsdaten sind an die
+Lab-Sitzung gebunden und laufen ab, sobald die Sitzung endet oder neu
+gestartet wird — die GitHub Secrets müssen dann manuell mit den neuen Werten
+aktualisiert werden. Das ist eine Einschränkung der Lab-Sandbox, kein
+empfohlenes Produktions-Pattern: In einem regulären AWS-Account bleibt der
+OIDC-Ansatz aus Schritt 2 der richtige Weg, weil er ganz ohne gespeicherte
+Zugangsdaten auskommt und nicht manuell erneuert werden muss.
+
+---
+
 ## Schritt 3: ECS-Cluster anlegen
 
 ```bash
@@ -241,6 +280,9 @@ Wichtige Design-Entscheidungen:
 
 **`AccessDenied` beim `configure-aws-credentials`-Schritt**
 Die Trust Policy der IAM-Rolle ist meist zu eng oder zu weit falsch konfiguriert — prüft, ob `sub` in der Trust Policy exakt `repo:<user>/<repo>:ref:refs/heads/main` entspricht (inkl. korrektem Repo-Namen und Branch).
+
+**`AccessDenied` schon bei `aws iam create-open-id-connect-provider` (Schritt 2)**
+Typisch für **AWS Academy Learner Lab**-Accounts — dort ist das Anlegen eigener IAM-Rollen/OIDC-Provider grundsätzlich gesperrt. Siehe den Exkurs oben zum Fallback mit den temporären Learner-Lab-Zugangsdaten.
 
 **Task startet, aber Health-Check der Target Group schlägt dauerhaft fehl**
 Meist Security-Group-Problem: Die Security Group der Tasks muss eingehenden Traffic von der Security Group des ALB auf Port 80 erlauben (Schritt 4) — nicht umgekehrt.

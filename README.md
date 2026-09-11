@@ -1,6 +1,12 @@
-# biztrips
+# RefCard 02 – biztrips
 
 React 19 + Vite 8 Anwendung mit GitHub-Actions-Pipeline und Deployment auf AWS EC2.
+
+Teil der RefCard-Sequenz für das Modul M324 DevOps (CI/CD-Einheit): RefCard 02
+deckt Frontend-CI/CD (GitHub Actions, EC2, Docker, ECS) ab. Die geplante
+Fortsetzung (Spring-Boot-Backend, Storage, Fullstack auf AWS) ist in
+[`docs/future/RefCard-03-RefCard-05-own-repos.md`](docs/future/RefCard-03-RefCard-05-own-repos.md)
+festgehalten.
 
 ## Voraussetzungen
 

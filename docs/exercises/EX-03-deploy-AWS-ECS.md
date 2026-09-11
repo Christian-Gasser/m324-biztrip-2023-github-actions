@@ -118,6 +118,36 @@ Ein Fargate-Cluster braucht keine eigenen EC2-Instanzen — der Cluster ist zun�
 
 ---
 
+## Exkurs: Muss das Image in ECR liegen?
+
+Nein. ECS/Fargate kann Images grundsätzlich aus jeder Registry ziehen, nicht nur aus ECR — auch aus DockerHub. Diese Übung verwendet ECR, weil die `executionRoleArn` den Pull dann ohne zusätzliche Zugangsdaten erlaubt (rein über IAM) und kein Internetzugriff der Tasks nötig ist. Bei DockerHub sieht es je nach Sichtbarkeit des Images anders aus:
+
+**Öffentliches DockerHub-Image**
+Einfach die Image-URL direkt in der Task Definition eintragen, z. B. `"image": "docker.io/<user>/biztrips:latest"` — kein ECR-Push-Schritt nötig. Wichtig: Die Fargate-Tasks brauchen dann **Internetzugriff** (Public IP in einem öffentlichen Subnet oder NAT-Gateway), da DockerHub im Gegensatz zu ECR nicht über einen AWS-internen Pfad erreichbar ist. Fehlt das, schlägt der Pull mit `CannotPullContainerError` fehl (siehe Stolpersteine).
+
+**Privates DockerHub-Repo**
+Zusätzlich müssen Zugangsdaten hinterlegt werden:
+
+1. DockerHub-Zugangsdaten als Secret in AWS Secrets Manager anlegen, z. B.:
+   ```bash
+   aws secretsmanager create-secret \
+     --name dockerhub-credentials \
+     --secret-string '{"username":"<user>","password":"<token>"}'
+   ```
+2. In der Task Definition beim Container `repositoryCredentials` referenzieren:
+   ```json
+   {
+     "repositoryCredentials": {
+       "credentialsParameter": "arn:aws:secretsmanager:eu-central-1:123456789012:secret:dockerhub-credentials"
+     }
+   }
+   ```
+3. Die `executionRoleArn` braucht zusätzlich `secretsmanager:GetSecretValue` auf dieses Secret, sonst schlägt der Pull mit einem Berechtigungsfehler fehl.
+
+Kurz: ECR ist hier die einfachere, tiefer integrierte Lösung ohne separates Credential-Handling — DockerHub funktioniert aber genauso, mit etwas mehr Konfigurationsaufwand.
+
+---
+
 ## Schritt 6: ECS-Service anlegen
 
 ```bash

@@ -1,17 +1,22 @@
 # Planung: RefCard 03–05 — eigene Repos pro Service
 
-> Status: Planung / noch nicht umgesetzt. Dieses Dokument hält die Entscheidungen
-> fest, bevor RefCard 03 begonnen wird, damit die Struktur über die ganze
-> Sequenz hinweg konsistent bleibt.
+> Status: RefCard 03 ist als eigene Repos aufgesetzt und in Arbeit; 04/05
+> weiterhin in Planung. Dieses Dokument hält die Entscheidungen fest, damit
+> die Struktur über die ganze Sequenz hinweg konsistent bleibt.
 
 ## Überblick über die Sequenz
 
 | RefCard | Status | Neues Thema | Frontend | Backend | Datenbank | Storage |
 | --- | --- | --- | --- | --- | --- | --- |
 | 02 (dieses Repo) | 🟢 fertig | GitHub Actions, EC2, Docker, ECS | React + Vite | – | – | – |
-| 03 | ⚪ geplant | Spring Boot Backend | React + Vite | Spring Boot | MariaDB | – |
+| 03 | 🟡 in Arbeit | Spring Boot Backend | React + Vite | Spring Boot | MariaDB | – |
 | 04 | ⚪ geplant | Storage (Bilder) | React + Vite | Spring Boot | MariaDB | lokal/Volume → Vorstufe zu S3 |
 | 05 | ⚪ geplant | Fullstack auf AWS | React + Vite | Spring Boot | MariaDB | S3 |
+
+RefCard 03 liegt bereits in zwei separaten Repos vor:
+
+- Backend: [`RefCard-03-be-SpringBootBusinessTrips`](https://github.com/bbwlc/RefCard-03-be-SpringBootBusinessTrips)
+- Frontend: [`RefCard-03-fe-React-vite`](https://github.com/bbwlc/refcard-03-fe-react-vite)
 
 Jede RefCard führt genau **ein** neues Konzept ein. Das Frontend bleibt über
 die ganze Sequenz React + Vite (keine Umstellung auf Next.js o. Ä.), damit die
@@ -41,18 +46,25 @@ Sie brauchen entweder zwei Repos parallel ausgecheckt, oder ein separates,
 kleines "Compose"-Repo/Verzeichnis nur für die lokale Entwicklung, das beide
 Images referenziert (siehe Abschnitt "Lokale Entwicklung in RefCard 05").
 
-## RefCard 03 — Spring Boot Backend + MariaDB (eigenes Repo)
+## RefCard 03 — Spring Boot Backend + MariaDB (eigene Repos)
 
-- Neues Repo, z. B. `RefCard-03-biztrips-backend`.
-- Spring Boot REST-API, die die bestehende React-App (aus RefCard 02) mit
-  echten Daten aus MariaDB bedient statt Mock-Daten/Items.
-- MariaDB lokal via Docker Compose für die Entwicklung; auf AWS zunächst als
-  eigener Container oder RDS (Detailentscheid folgt beim Bauen dieser Karte).
-- Eigenes `Dockerfile` (Multi-Stage: Maven/Gradle-Build → schlankes JRE-Image),
-  eigene `deploy.yml`.
-- Frontend-Repo (RefCard 02) bekommt `VITE_API_BASE_URL` auf die neue
-  Backend-URL gesetzt — das Env-Var-Pattern existiert bereits und muss nicht
-  neu erfunden werden.
+Umgesetzt als zwei Repos, analog zur Entscheidung oben:
+
+- **Backend** — [`RefCard-03-be-SpringBootBusinessTrips`](https://github.com/bbwlc/RefCard-03-be-SpringBootBusinessTrips):
+  Spring Boot REST-API (Java 21, Spring Boot 4.1, Web + Data JPA, Maven
+  Wrapper) für Mitarbeitende, Business Trips, Flüge, Meetings. MariaDB lokal
+  via Docker Compose, H2 als Default für Tests/schnellen lokalen Start. Hat
+  eigenes `Dockerfile`, eigene `deploy.yml`, eigene `task-definition.json`
+  und eigenes `docs/`-Verzeichnis (inkl. eigener Kopie dieser Planung unter
+  `docs/future/`).
+- **Frontend** — [`RefCard-03-fe-React-vite`](https://github.com/bbwlc/refcard-03-fe-react-vite):
+  Fortsetzung von RefCard 02 (React + Vite), an die neue Backend-API
+  angebunden statt an Mock-Daten. `VITE_API_BASE_URL` zeigt auf die neue
+  Backend-URL — das Env-Var-Pattern aus RefCard 02 wurde direkt
+  wiederverwendet.
+
+Namenskonvention damit etabliert: `RefCard-<nn>-be-<Beschreibung>` /
+`RefCard-<nn>-fe-<Beschreibung>` pro Service.
 
 ## RefCard 04 — Storage (Bilder)
 
@@ -137,9 +149,9 @@ zwei konkrete Auswirkungen auf die Planung:
 - Frontend-Auslieferung in RefCard 05: nginx-Container in ECS (konsistent zu
   EX-02/EX-03) vs. S3+CloudFront (würde S3 doppelt nutzen — einmal für
   Storage, einmal für Hosting — ggf. verwirrend für Studierende).
-- Naming-Konvention für die neuen Repos (`RefCard-03-...`, `RefCard-04-...`,
-  `RefCard-05-...`) und ob 04 ein eigenes Repo oder ein Branch/Fortsetzung von
-  03 wird.
+- Ob RefCard 04 in den bestehenden RefCard-03-Repos weitergebaut wird oder
+  eigene `RefCard-04-be-...`/`RefCard-04-fe-...`-Repos bekommt (Namenskonvention
+  `RefCard-<nn>-be/fe-<Beschreibung>` ist mit RefCard 03 etabliert).
 - Soll EX-03 (dieses Repo) um einen Hinweis/Alternativ-Abschnitt zu
   Learner-Lab-Zugangsdaten ergänzt werden, oder bleibt EX-03 bewusst bei
   "echtem" OIDC als Referenz und der Learner-Lab-Fallback wird nur in

@@ -56,5 +56,36 @@ jobs:
           path: dist/
           retention-days: 7
 
-  # TODO (EX-01): Deploy-Job auf EC2 ergänzen
-  # TODO (EX-02): Docker-Job für Docker Hub ergänzen
+  deploy:
+    name: Deploy to AWS EC2
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    environment: production
+    steps:
+      - name: Build-Artefakt herunterladen
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: prepare SSH-key
+        run: |
+          test -n ${{ secrets.EC2_SSH_KEY }}  || { echo "EC2_SSH_KEY is not set"; exit 1; }
+          test -n ${{ secrets.EC2_HOST}}  || { echo "EC2_HOST is not set"; exit 1; }
+          test -n ${{ secrets.EC2_USER }} || { echo "EC2_USER is not set"; exit 1; }
+          apk add --no-cache openssh-client rsync
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          cp "${{ secrets.EC2_SSH_KEY }}" ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+          ssh "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" true
+
+      - name: sync build to EC2
+        run: rsync -az --delete dist/ "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ec2-user/deploy/"
+
+      - name: deploy to EC2
+        run: ssh "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" "sudo rsync -a --delete /home/ec2-user/deploy/ /var/www/biztrips/ && sudo systemctl reload nginx"
+
+      - name: delete SSH-key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

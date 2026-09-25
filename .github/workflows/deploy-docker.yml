@@ -65,7 +65,7 @@ jobs:
     env:
       DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-      IMAGE: ${{ secrets.DOCKERHUB_USER }}/biztrips
+      IMAGE: "${{ secrets.DOCKERHUB_USER }}"/biztrips
     steps:
       - uses: actions/checkout@v4
 

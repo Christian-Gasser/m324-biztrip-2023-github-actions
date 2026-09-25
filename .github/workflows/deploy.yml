@@ -62,8 +62,14 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment: production
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USER: ${{ secrets.EC2_USER }}
+      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+      REMOTE_TMP: /home/ec2-user/deploy
+      WEB_ROOT: /var/www/biztrips
     steps:
-      - name: Build-Artefakt herunterladen
+      - name: download build artifact
         uses: actions/download-artifact@v4
         with:
           name: dist
@@ -72,13 +78,12 @@ jobs:
       - name: prepare SSH-key
         run: |
           test -n ${{ secrets.EC2_SSH_KEY }}  || { echo "EC2_SSH_KEY is not set"; exit 1; }
-          test -n ${{ secrets.EC2_HOST}}  || { echo "EC2_HOST is not set"; exit 1; }
-          test -n ${{ secrets.EC2_USER }} || { echo "EC2_USER is not set"; exit 1; }
-          apk add --no-cache openssh-client rsync
+          test -n $EC2_HOST || { echo "EC2_HOST is not set"; exit 1; }
+          test -n $EC2_USER || { echo "EC2_USER is not set"; exit 1; }
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          cp "${{ secrets.EC2_SSH_KEY }}" ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+          cp "$EC2_SSH_KEY" ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
-          ssh "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" true
+          ssh "$EC2_USER@$EC2_HOST" true
 
       - name: sync build to EC2
         run: rsync -az --delete dist/ "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ec2-user/deploy/"

@@ -81,7 +81,7 @@ jobs:
           test -n "$EC2_HOST" || { echo "EC2_HOST is not set"; exit 1; }
           test -n "$EC2_USER" || { echo "EC2_USER is not set"; exit 1; }
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          cp "$EC2_SSH_KEY" ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+          echo "$EC2_SSH_KEY" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
           ssh "$EC2_USER@$EC2_HOST" true
 

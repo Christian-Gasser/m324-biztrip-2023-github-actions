@@ -77,7 +77,7 @@ jobs:
 
       - name: prepare SSH-key
         run: |
-          test -n ${{ secrets.EC2_SSH_KEY }}  || { echo "EC2_SSH_KEY is not set"; exit 1; }
+          test -n $EC2_SSH_KEY  || { echo "EC2_SSH_KEY is not set"; exit 1; }
           test -n $EC2_HOST || { echo "EC2_HOST is not set"; exit 1; }
           test -n $EC2_USER || { echo "EC2_USER is not set"; exit 1; }
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
